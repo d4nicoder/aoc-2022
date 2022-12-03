@@ -28,7 +28,37 @@ function part1(input: string[]): string {
 }
 
 function part2(input: string[]): string {
-  return ''
+  const shared: string[] = []
+
+  let repeats: Record<string, number> = {}
+
+  input.forEach((line, index) => {
+    if (index > 0 && index % 3 === 0) {
+      const letter = Object.entries(repeats).find(([letter, count]) => count === 3)
+      if (letter) {
+        shared.push(letter[0])
+      }
+      repeats = {}
+    }
+    const size = line.length
+    const used: Record<string, boolean> = {}
+
+    for (let i = 0; i < size; i++) {
+      const letter = line[i]
+      if (!used[letter]) {
+        repeats[letter] = (repeats[letter] || 0) + 1
+        used[letter] = true
+      }
+    }
+  })
+
+  const letter = Object.entries(repeats).find(([letter, count]) => count === 3)
+  if (letter) {
+    shared.push(letter[0])
+  }
+
+  const sum = shared.reduce((acc, letter) => acc + letters.indexOf(letter) + 1, 0)
+  return sum.toString()
 }
 
 function main() {
