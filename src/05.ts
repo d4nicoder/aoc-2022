@@ -55,16 +55,25 @@ function part1(stack: string[][], instructions: Instruction[]): string {
   return result.join('')
 }
 
-function part2(input: string[]): string {
-  return ''
+function part2(stack: string[][], instructions: Instruction[]): string {
+  const result: string[] = []
+  instructions.forEach((instruction) => {
+    const elements = stack[instruction.from - 1].splice(0, instruction.qty)
+    stack[instruction.to - 1].splice(0, 0, ...elements)
+  })
+  stack.forEach((s) => {
+    result.push(s.shift() || '')
+  })
+  return result.join('')
 }
 
 function main() {
   const input = fs.readFileSync(`${__dirname}/05.in`).toString().split('\n').filter(l => l.length)
   const stacks = buildStacks(input)
+  const stacks2 = buildStacks(input)
   const instructions = buildInstructions(input)
   const result1 = part1(stacks, instructions)
-  const result2 = part2(input)
+  const result2 = part2(stacks2, instructions)
   console.log(`Part 1: ${result1}`)
   console.log(`Part 2: ${result2}`)
 }
