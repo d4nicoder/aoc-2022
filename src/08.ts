@@ -2,96 +2,16 @@ import fs from 'fs'
 
 interface Tree {
   height: number
-  left: boolean | null
-  right: boolean | null
-  top: boolean | null
-  bottom: boolean | null
-}
-
-interface VerticalTracker {
-  row: number
-  height: number
-}
-
-interface SideTracker {
-  col: number
-  height: number
 }
 
 function buildForest(lines: string[]): Tree[][] {
   const forest: Tree[][] = []
   lines.forEach((line) => {
     forest.push(line.split('').map((c) => ({
-      height: parseInt(c),
-      top: null,
-      bottom: null,
-      left: null,
-      right: null
+      height: parseInt(c)
     })))
   })
   return forest
-}
-
-function buildHeatMap(forest: Tree[][]) {
-  forest.forEach((row) => {
-    console.log(row.map((t) => t.height.toString()).join(''))
-  })
-
-  let top: VerticalTracker[] = Array(forest.length).fill(null).map(() => ({
-    row: 0,
-    height: 0
-  }))
-  let bottom: VerticalTracker[] = Array(forest.length).fill(null).map(() => ({
-    row: 0,
-    height: 0
-  }))
-  let left: SideTracker[] = Array(forest[0].length).fill(null).map(() => ({
-    col: 0,
-    height: 0
-  }))
-  let right: SideTracker[] = Array(forest[0].length).fill(null).map(() => ({
-    col: 0,
-    height: 0
-  }))
-
-  for (let i = 0; i < forest.length; i++) {
-    const row = forest[i]
-    top = top.map((t, col) => {
-      if (row[col].height > t.height) {
-        // console.log(`Top: row ${i} col ${col} top. ${row[col].height} > ${t.height}`)
-        t.height = row[col].height
-        t.row = i
-      } else {
-        // console.log(`Top: row ${i} col ${col} bottom. ${row[col].height} <= ${t.height}`)
-      }
-      return t
-    })
-    bottom = bottom.map((t, col) => {
-      if (row[col].height >= t.height) {
-        // console.log(`Bottom: row ${i} col ${col} top. ${row[col].height} > ${t.height}`)
-        t.height = row[col].height
-        t.row = i
-      }
-      return t
-    })
-    row.forEach((t, col) => {
-      if (left[i].height < t.height) {
-        left[i].height = t.height
-        left[i].col = col
-      }
-      if (right[i].height <= t.height) {
-        right[i].height = t.height
-        right[i].col = col
-      }
-    })
-  }
-
-  return {
-    top,
-    bottom,
-    left,
-    right
-  }
 }
 
 function part1(lines: string[]): string {
@@ -149,8 +69,121 @@ function part1(lines: string[]): string {
   return visible.size.toString()
 }
 
+function calculateOverview(forecast: Tree[][], x: number, y: number): number {
+  let up: number = 0
+  let down: number = 0
+  let left: number = 0
+  let right: number = 0
+
+  if (x === 0 || y === 0) {
+    return 0
+  }
+
+  // From top
+  for (let r = y - 1; r >= 0; r--) {
+    up++
+    if (forecast[r][x].height >= forecast[y][x].height) {
+      break
+    }
+  }
+
+  // From bottom
+  for (let r = y + 1; r < forecast.length; r++) {
+    down++
+    if (forecast[r][x].height >= forecast[y][x].height) {
+      break
+    }
+  }
+
+  // From left
+  for (let c = x - 1; c >= 0; c--) {
+    left++
+    if (forecast[y][c].height >= forecast[y][x].height) {
+      break
+    }
+  }
+
+  // From right
+  for (let c = x + 1; c < forecast[y].length; c++) {
+    right++
+    if (forecast[y][c].height >= forecast[y][x].height) {
+      break
+    }
+  }
+  return up * down * left * right
+}
+
 function part2(lines: string[]): string {
-  return 'pending'
+  const forest = buildForest(lines)
+  let visible: Map<string, boolean> = new Map()
+
+  let maxOverview = 0
+
+  // Visible from left
+  for (let r = 0; r < forest.length; r++) {
+    let highest = -1
+    let highestCol = -1
+    for (let c = 0; c < forest[r].length; c++) {
+      const tree = forest[r][c]
+      if (tree.height > highest) {
+        highest = tree.height
+        visible.set(`${r},${c}`, true)
+        highestCol = c
+      }
+    }
+    const overview = calculateOverview(forest, highestCol, r)
+    maxOverview = Math.max(maxOverview, overview)
+  }
+
+  // Visible from right
+  for (let r = 0; r < forest.length; r++) {
+    let highest = -1
+    let highestCol = -1
+    for (let c = forest[r].length - 1; c >= 0; c--) {
+      const tree = forest[r][c]
+      if (tree.height > highest) {
+        highest = tree.height
+        visible.set(`${r},${c}`, true)
+        highestCol = c
+      }
+    }
+    const overview = calculateOverview(forest, highestCol, r)
+    maxOverview = Math.max(maxOverview, overview)
+  }
+
+  // Visible from top
+  for (let c = 0; c < forest[0].length; c++) {
+    let highest = -1
+    let highestRow = -1
+    for (let r = 0; r < forest.length; r++) {
+      const tree = forest[r][c]
+      if (tree.height > highest) {
+        highest = tree.height
+        visible.set(`${r},${c}`, true)
+        highestRow = r
+      }
+    }
+    const overview = calculateOverview(forest, c, highestRow)
+    maxOverview = Math.max(maxOverview, overview)
+  }
+
+  // Visible from bottom
+  for (let c = 0; c < forest[0].length; c++) {
+    let highest = -1
+    let highestRow = -1
+    for (let r = forest.length - 1; r >= 0; r--) {
+      const tree = forest[r][c]
+      if (tree.height > highest) {
+        highest = tree.height
+        visible.set(`${r},${c}`, true)
+        highestRow = r
+      }
+    }
+    const overview = calculateOverview(forest, c, highestRow)
+    maxOverview = Math.max(maxOverview, overview)
+  }
+
+  return maxOverview.toString()
 }
 
 function main() {
